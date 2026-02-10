@@ -283,25 +283,35 @@ const Generator: React.FC<GeneratorProps> = ({
           Scroll down to see preview
         </div>
 
-        {/* Tab View Switcher */}
-        {currentCV.coverLetter && (
-          <div className="flex justify-center mb-6 no-print">
-             <div className="bg-white p-1 rounded-full shadow-sm border border-slate-200 inline-flex">
-               <button 
-                  onClick={() => setActiveTab('resume')}
-                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'resume' ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
-               >
-                 Resume
-               </button>
-               <button 
-                  onClick={() => setActiveTab('cover-letter')}
-                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'cover-letter' ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
-               >
-                 Cover Letter
-               </button>
-             </div>
+        {/* Main View Top Bar (Tabs & Export) */}
+        <div className="max-w-4xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 no-print">
+          <div className="flex-1 flex justify-start">
+            {currentCV.coverLetter && (
+              <div className="bg-white p-1 rounded-full shadow-sm border border-slate-200 inline-flex">
+                <button 
+                   onClick={() => setActiveTab('resume')}
+                   className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'resume' ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                >
+                  Resume
+                </button>
+                <button 
+                   onClick={() => setActiveTab('cover-letter')}
+                   className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'cover-letter' ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                >
+                  Cover Letter
+                </button>
+              </div>
+            )}
           </div>
-        )}
+          
+          <button
+            onClick={handlePrint}
+            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+          >
+            <Download size={16} />
+            Export PDF
+          </button>
+        </div>
         
         <div className="max-w-4xl mx-auto w-full relative pb-10">
           {isGenerating && (
