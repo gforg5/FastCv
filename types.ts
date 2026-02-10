@@ -21,6 +21,7 @@ export interface ResumeProfile {
   skills: string[];
   experience: Experience[];
   education: Education[];
+  coverLetter?: string;
 }
 
 export interface CVRecord {

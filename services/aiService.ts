@@ -2,7 +2,6 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { ResumeProfile } from '../types';
 
 // Initialize the API client
-// We create it inside functions or lazily to ensure it catches the env var correctly if it changes
 const getAIClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
 // Define the exact schema we want the AI to return for a Resume Profile
@@ -72,7 +71,7 @@ ${rawText}
       config: {
         responseMimeType: "application/json",
         responseSchema: resumeSchema,
-        temperature: 0.2, // Low temp for extraction
+        temperature: 0.2,
       }
     });
 
@@ -114,7 +113,7 @@ ${JSON.stringify(baseProfile, null, 2)}
       config: {
         responseMimeType: "application/json",
         responseSchema: resumeSchema,
-        temperature: 0.7, // Slightly higher for creative rewriting
+        temperature: 0.7,
         systemInstruction: "You are an expert resume tailor. You strictly return valid JSON matching the requested schema without any markdown formatting."
       }
     });
@@ -126,6 +125,37 @@ ${JSON.stringify(baseProfile, null, 2)}
     return JSON.parse(response.text) as ResumeProfile;
   } catch (error) {
     console.error("Error tailoring profile:", error);
+    throw error;
+  }
+};
+
+export const generateCoverLetter = async (profile: ResumeProfile, targetJobTitle: string): Promise<string> => {
+  const ai = getAIClient();
+  const prompt = `Write a highly professional, engaging, and modern cover letter for a "${targetJobTitle}" position based on the following candidate profile.
+
+Format the output strictly as plain text paragraphs without markdown asterisks. Do not include placeholder addresses at the top. Jump straight to the greeting (e.g., "Dear Hiring Manager,"), followed by 3-4 impactful paragraphs, and end with a professional sign-off (e.g., "Sincerely, [Candidate Name]").
+
+Profile:
+---
+${JSON.stringify(profile, null, 2)}
+---`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        temperature: 0.7,
+      }
+    });
+
+    if (!response.text) {
+      throw new Error("Empty response from AI");
+    }
+
+    return response.text.trim();
+  } catch (error) {
+    console.error("Error generating cover letter:", error);
     throw error;
   }
 };

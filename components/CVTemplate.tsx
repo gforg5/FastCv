@@ -4,9 +4,49 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 
 interface CVTemplateProps {
   profile: ResumeProfile;
+  view?: 'resume' | 'cover-letter';
 }
 
-const CVTemplate: React.FC<CVTemplateProps> = ({ profile }) => {
+const CVTemplate: React.FC<CVTemplateProps> = ({ profile, view = 'resume' }) => {
+  
+  if (view === 'cover-letter' && profile.coverLetter) {
+    return (
+      <div className="bg-white shadow-xl max-w-[21cm] min-h-[29.7cm] mx-auto p-12 cv-page sm:rounded-lg text-slate-800 font-sans">
+        {/* Header */}
+        <header className="border-b-2 border-slate-800 pb-6 mb-8">
+          <h1 className="text-4xl font-bold uppercase tracking-wider text-slate-900 mb-3">
+            {profile.fullName || 'Your Name'}
+          </h1>
+          <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+            {profile.email && (
+              <div className="flex items-center gap-1.5">
+                <Mail size={14} />
+                <span>{profile.email}</span>
+              </div>
+            )}
+            {profile.phone && (
+              <div className="flex items-center gap-1.5">
+                <Phone size={14} />
+                <span>{profile.phone}</span>
+              </div>
+            )}
+            {profile.location && (
+              <div className="flex items-center gap-1.5">
+                <MapPin size={14} />
+                <span>{profile.location}</span>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Cover Letter Body */}
+        <div className="text-base leading-loose text-slate-700 whitespace-pre-wrap font-serif">
+          {profile.coverLetter}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white shadow-xl max-w-[21cm] min-h-[29.7cm] mx-auto p-12 cv-page sm:rounded-lg text-slate-800 font-sans">
       {/* Header */}

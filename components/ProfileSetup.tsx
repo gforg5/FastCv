@@ -1,11 +1,67 @@
 import React, { useState } from 'react';
 import { parseRawProfile } from '../services/aiService';
 import { ResumeProfile } from '../types';
-import { Loader2, FileText, Upload, Sparkles } from 'lucide-react';
+import { Loader2, FileText, Upload, Sparkles, Wand2 } from 'lucide-react';
 
 interface ProfileSetupProps {
   onProfileSaved: (profile: ResumeProfile) => void;
 }
+
+const EXAMPLE_SE = `Alex Mercer
+alex.mercer@email.com
++1 (555) 123-4567
+Seattle, WA
+
+Summary:
+Innovative Software Engineer with 5 years of experience designing and developing scalable web applications. Proficient in modern JavaScript frameworks and cloud infrastructure.
+
+Skills:
+JavaScript, TypeScript, React.js, Node.js, Python, AWS, Docker, GraphQL, MongoDB, PostgreSQL, CI/CD
+
+Experience:
+Senior Frontend Developer | TechNova Solutions
+Jan 2021 - Present
+- Spearheaded the migration of a legacy monolithic application to a React/Next.js micro-frontend architecture, improving page load speeds by 45%.
+- Mentored a team of 4 junior developers and established comprehensive code review and testing standards.
+- Integrated AI-driven features using OpenAI APIs, boosting user engagement by 30%.
+
+Full Stack Developer | WebSphere Inc
+Jun 2018 - Dec 2020
+- Developed and maintained responsive e-commerce landing pages, driving a 20% increase in conversion rates.
+- Built secure RESTful APIs in Node.js to handle payment processing for over 10,000 daily active users.
+- Automated deployment pipelines using GitHub Actions, reducing deployment time by 50%.
+
+Education:
+B.S. in Computer Science
+University of Washington, 2018`;
+
+const EXAMPLE_MARKETING = `Sarah Jenkins
+sarah.j.marketing@email.com
++1 (555) 987-6543
+Austin, TX
+
+Summary:
+Results-driven Digital Marketing Specialist with over 4 years of experience executing data-backed campaigns that drive brand awareness and lead generation. 
+
+Skills:
+SEO/SEM, Content Marketing, Google Analytics, Facebook Ads, Email Marketing (Mailchimp), Copywriting, HubSpot CRM
+
+Experience:
+Digital Marketing Manager | GrowthPulse
+Feb 2020 - Present
+- Managed a monthly ad budget of $50k across Google and Meta, consistently achieving a 3x ROAS.
+- Launched a comprehensive SEO strategy that increased organic blog traffic by 150% within 8 months.
+- Designed and executed automated email drip campaigns that improved lead conversion by 25%.
+
+Marketing Coordinator | BrightIdeas Agency
+Jul 2018 - Jan 2020
+- Assisted in the creation of social media content calendars across Instagram, LinkedIn, and Twitter, growing total followers by 40%.
+- Coordinated with external influencers for product launch campaigns.
+- Analyzed weekly campaign metrics and presented performance reports to stakeholders.
+
+Education:
+B.A. in Communications
+University of Texas, 2018`;
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
   const [rawText, setRawText] = useState('');
@@ -56,7 +112,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
 
       {/* Input Form Box */}
       <div className="p-8 bg-white rounded-3xl shadow-xl border border-slate-200 relative overflow-hidden">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 mb-6 shadow-inner border border-brand-100 transform -rotate-3 hover:rotate-0 transition-all duration-300">
             <Upload size={28} />
           </div>
@@ -64,6 +120,23 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
           <p className="text-slate-500 font-medium">
             Paste your existing resume, LinkedIn summary, or just type your details below. 
           </p>
+        </div>
+
+        {/* Example Buttons */}
+        <div className="flex flex-wrap justify-center gap-3 mb-6 relative z-10">
+          <span className="text-sm text-slate-400 font-bold self-center mr-2">Quick Try:</span>
+          <button 
+            onClick={() => setRawText(EXAMPLE_SE)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-600 text-xs font-bold transition-colors border border-slate-200"
+          >
+            <Wand2 size={12} /> Software Engineer
+          </button>
+          <button 
+            onClick={() => setRawText(EXAMPLE_MARKETING)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-600 text-xs font-bold transition-colors border border-slate-200"
+          >
+            <Wand2 size={12} /> Marketing Specialist
+          </button>
         </div>
 
         <div className="space-y-5 relative z-10">

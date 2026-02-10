@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ResumeProfile, CVRecord } from '../types';
-import { tailorProfileForJob } from '../services/aiService';
+import { tailorProfileForJob, generateCoverLetter } from '../services/aiService';
 import CVTemplate from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info } from 'lucide-react';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Edit3, Mail, X } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;
@@ -24,12 +24,20 @@ const Generator: React.FC<GeneratorProps> = ({
   const [targetJob, setTargetJob] = useState('');
   const [currentCV, setCurrentCV] = useState<ResumeProfile>(baseProfile);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter'>('resume');
+  
+  // Edit Modal State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<ResumeProfile>(baseProfile);
 
   // When baseProfile changes (e.g., loaded from history), update currentCV
   useEffect(() => {
     setCurrentCV(baseProfile);
+    setEditForm(baseProfile);
     setTargetJob(''); // reset target job since we loaded a specific profile
+    setActiveTab('resume');
   }, [baseProfile]);
 
   const saveToHistory = (jobTitle: string, tailoredProfile: ResumeProfile) => {
@@ -57,11 +65,45 @@ const Generator: React.FC<GeneratorProps> = ({
     try {
       const tailored = await tailorProfileForJob(baseProfile, targetJob);
       setCurrentCV(tailored);
+      setEditForm(tailored);
       saveToHistory(targetJob, tailored);
+      setActiveTab('resume');
     } catch (err: any) {
       setError(err.message || "Failed to generate CV. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateCoverLetter = async () => {
+    if (!targetJob.trim()) {
+      setError("Please enter a job title to generate a cover letter.");
+      return;
+    }
+
+    setIsGeneratingLetter(true);
+    setError(null);
+
+    try {
+      const letter = await generateCoverLetter(currentCV, targetJob);
+      const updatedCV = { ...currentCV, coverLetter: letter };
+      setCurrentCV(updatedCV);
+      setEditForm(updatedCV);
+      saveToHistory(targetJob + " (w/ Letter)", updatedCV);
+      setActiveTab('cover-letter');
+    } catch (err: any) {
+      setError(err.message || "Failed to generate cover letter.");
+    } finally {
+      setIsGeneratingLetter(false);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    setCurrentCV(editForm);
+    setIsEditing(false);
+    // Optionally save the edited version to history so it's not lost
+    if (targetJob.trim()) {
+       saveToHistory(targetJob + " (Edited)", editForm);
     }
   };
 
@@ -109,20 +151,25 @@ const Generator: React.FC<GeneratorProps> = ({
              </button>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200/60 mb-8 shadow-sm">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Active Profile Data</h2>
-            <p className="text-sm text-slate-700 mb-3">Using details for <strong className="font-bold text-slate-900">{baseProfile.fullName}</strong></p>
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200/60 mb-6 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Profile Data</h2>
+              <button onClick={() => setIsEditing(true)} className="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 hover:bg-brand-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
+                <Edit3 size={10} /> Edit Manual
+              </button>
+            </div>
+            <p className="text-sm text-slate-700 mb-3 truncate">Ready for <strong className="font-bold text-slate-900">{currentCV.fullName}</strong></p>
             <div className="flex flex-wrap gap-2">
               <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
-                {baseProfile.experience?.length || 0} Roles
+                {currentCV.experience?.length || 0} Roles
               </span>
               <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
-                {baseProfile.skills?.length || 0} Skills
+                {currentCV.skills?.length || 0} Skills
               </span>
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div>
               <label htmlFor="targetJob" className="block text-sm font-bold text-slate-700 mb-2">
                 Target Job Title
@@ -147,17 +194,35 @@ const Generator: React.FC<GeneratorProps> = ({
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !targetJob.trim()}
-              className="w-full py-4 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="w-full py-4 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  Tailoring...
+                  Tailoring Resume...
                 </>
               ) : (
                 <>
                   <Zap size={20} />
                   Fast Generate
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={handleGenerateCoverLetter}
+              disabled={isGeneratingLetter || !targetJob.trim()}
+              className="w-full py-3.5 px-4 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+            >
+              {isGeneratingLetter ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Writing Letter...
+                </>
+              ) : (
+                <>
+                  <Mail size={18} />
+                  Add Cover Letter
                 </>
               )}
             </button>
@@ -167,13 +232,13 @@ const Generator: React.FC<GeneratorProps> = ({
         <div className="p-6 mt-auto bg-slate-50 border-t border-slate-200 flex flex-col items-center">
            <button
             onClick={handlePrint}
-            className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+            className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
           >
             <Download size={18} />
-            Download PDF
+            Export to PDF (Print)
           </button>
           <p className="text-center text-xs text-slate-500 font-medium mt-3 mb-6">
-            Tip: Click to open browser print and save as PDF.
+            Tip: Uses browser print dialog to save as PDF.
           </p>
 
           {/* Sidebar Developer Copyright */}
@@ -212,26 +277,115 @@ const Generator: React.FC<GeneratorProps> = ({
       </div>
 
       {/* Main View - CV Preview */}
-      <div className="flex-1 bg-slate-100 lg:overflow-y-auto p-4 lg:p-8 relative">
-        <div className="max-w-4xl mx-auto">
-          {/* Mobile indicator */}
-          <div className="lg:hidden text-center mb-6 text-sm text-brand-600 font-bold uppercase tracking-wider no-print">
-            Scroll down to see preview
+      <div className="flex-1 bg-slate-100 lg:overflow-y-auto p-4 lg:p-8 relative flex flex-col">
+        {/* Mobile indicator */}
+        <div className="lg:hidden text-center mb-6 text-sm text-brand-600 font-bold uppercase tracking-wider no-print">
+          Scroll down to see preview
+        </div>
+
+        {/* Tab View Switcher */}
+        {currentCV.coverLetter && (
+          <div className="flex justify-center mb-6 no-print">
+             <div className="bg-white p-1 rounded-full shadow-sm border border-slate-200 inline-flex">
+               <button 
+                  onClick={() => setActiveTab('resume')}
+                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'resume' ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+               >
+                 Resume
+               </button>
+               <button 
+                  onClick={() => setActiveTab('cover-letter')}
+                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'cover-letter' ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+               >
+                 Cover Letter
+               </button>
+             </div>
           </div>
-          
-          <div className="relative">
-            {isGenerating && (
-              <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-10 flex items-center justify-center rounded-lg border border-white/50">
-                <div className="bg-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-brand-600 font-bold border border-brand-100">
-                  <Loader2 className="animate-spin" size={24} />
-                  Rewriting perfectly for {targetJob}...
-                </div>
+        )}
+        
+        <div className="max-w-4xl mx-auto w-full relative pb-10">
+          {isGenerating && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-10 flex items-center justify-center rounded-lg border border-white/50">
+              <div className="bg-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-brand-600 font-bold border border-brand-100">
+                <Loader2 className="animate-spin" size={24} />
+                Rewriting perfectly for {targetJob}...
               </div>
-            )}
-            <CVTemplate profile={currentCV} />
-          </div>
+            </div>
+          )}
+          
+          <CVTemplate profile={currentCV} view={activeTab} />
         </div>
       </div>
+
+      {/* Edit CV Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setIsEditing(false)}></div>
+           
+           <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-[2rem] shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300 z-10 overflow-hidden">
+             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0 z-20">
+               <div>
+                 <h2 className="text-xl font-bold text-slate-900">Edit Details Manually</h2>
+                 <p className="text-xs text-slate-500 font-medium">Fine-tune the content before exporting</p>
+               </div>
+               <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-800 p-2 bg-white rounded-full border border-slate-200 shadow-sm">
+                 <X size={18} />
+               </button>
+             </div>
+
+             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Professional Summary</label>
+                  <textarea 
+                    className="w-full p-4 rounded-xl border-2 border-slate-200 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 text-sm h-32 leading-relaxed"
+                    value={editForm.summary}
+                    onChange={(e) => setEditForm({...editForm, summary: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Experience Bullet Points</label>
+                  <div className="space-y-4">
+                    {editForm.experience.map((exp, idx) => (
+                      <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="font-bold text-sm text-slate-800 mb-2">{exp.role} @ {exp.company}</div>
+                        <textarea 
+                          className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm h-28 leading-relaxed"
+                          value={exp.description.join('\n')}
+                          onChange={(e) => {
+                            const newExp = [...editForm.experience];
+                            newExp[idx].description = e.target.value.split('\n').filter(Boolean);
+                            setEditForm({...editForm, experience: newExp});
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {editForm.coverLetter && (
+                   <div>
+                     <label className="block text-sm font-bold text-slate-700 mb-2">Cover Letter Body</label>
+                     <textarea 
+                       className="w-full p-4 rounded-xl border-2 border-slate-200 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 text-sm h-48 leading-relaxed"
+                       value={editForm.coverLetter}
+                       onChange={(e) => setEditForm({...editForm, coverLetter: e.target.value})}
+                     />
+                   </div>
+                )}
+             </div>
+
+             <div className="p-6 border-t border-slate-100 bg-white sticky bottom-0 z-20 flex gap-3">
+                <button onClick={() => setIsEditing(false)} className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all">
+                  Cancel
+                </button>
+                <button onClick={handleSaveEdit} className="flex-1 py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition-all shadow-md">
+                  Save Changes
+                </button>
+             </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
