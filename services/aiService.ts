@@ -159,3 +159,31 @@ ${JSON.stringify(profile, null, 2)}
     throw error;
   }
 };
+
+export const enhanceMicroText = async (text: string, contextType: 'summary' | 'bullet'): Promise<string> => {
+  const ai = getAIClient();
+  const prompt = `Rewrite the following ${contextType} to make it sound more professional, impactful, and action-oriented for a resume.
+Keep it concise and factual. Do not add markdown or extra conversational text. Return ONLY the rewritten text.
+
+Original text:
+"${text}"`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        temperature: 0.7,
+      }
+    });
+
+    if (!response.text) {
+      throw new Error("Empty response from AI");
+    }
+
+    return response.text.trim().replace(/^["']|["']$/g, ''); // Remove quotes if AI added them
+  } catch (error) {
+    console.error("Error enhancing text:", error);
+    throw error;
+  }
+};

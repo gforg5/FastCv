@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ResumeProfile, CVRecord } from '../types';
-import { tailorProfileForJob, generateCoverLetter } from '../services/aiService';
-import CVTemplate from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Edit3, Mail, X, MapPin } from 'lucide-react';
+import { tailorProfileForJob, generateCoverLetter, enhanceMicroText } from '../services/aiService';
+import CVTemplate, { TemplateType } from './CVTemplate';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2 } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;
@@ -25,17 +25,17 @@ const Generator: React.FC<GeneratorProps> = ({
   const [currentCV, setCurrentCV] = useState<ResumeProfile>(baseProfile);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter'>('resume');
   
-  // Edit Modal State
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<ResumeProfile>(baseProfile);
+  // Settings & Templates
+  const [showSettings, setShowSettings] = useState(false);
+  const [template, setTemplate] = useState<TemplateType>('modern');
 
   // When baseProfile changes (e.g., loaded from history), update currentCV
   useEffect(() => {
     setCurrentCV(baseProfile);
-    setEditForm(baseProfile);
     setTargetJob(''); // reset target job since we loaded a specific profile
     setActiveTab('resume');
   }, [baseProfile]);
@@ -43,7 +43,7 @@ const Generator: React.FC<GeneratorProps> = ({
   const saveToHistory = (jobTitle: string, tailoredProfile: ResumeProfile) => {
     const newRecord: CVRecord = {
       id: Date.now().toString(),
-      targetJob: jobTitle,
+      targetJob: jobTitle || 'Edited Draft',
       date: new Date().toLocaleDateString(),
       profile: tailoredProfile
     };
@@ -65,7 +65,6 @@ const Generator: React.FC<GeneratorProps> = ({
     try {
       const tailored = await tailorProfileForJob(baseProfile, targetJob);
       setCurrentCV(tailored);
-      setEditForm(tailored);
       saveToHistory(targetJob, tailored);
       setActiveTab('resume');
     } catch (err: any) {
@@ -88,7 +87,6 @@ const Generator: React.FC<GeneratorProps> = ({
       const letter = await generateCoverLetter(currentCV, targetJob);
       const updatedCV = { ...currentCV, coverLetter: letter };
       setCurrentCV(updatedCV);
-      setEditForm(updatedCV);
       saveToHistory(targetJob + " (w/ Letter)", updatedCV);
       setActiveTab('cover-letter');
     } catch (err: any) {
@@ -98,21 +96,46 @@ const Generator: React.FC<GeneratorProps> = ({
     }
   };
 
-  const handleSaveEdit = () => {
-    setCurrentCV(editForm);
-    setIsEditing(false);
-    // Optionally save the edited version to history so it's not lost
-    if (targetJob.trim()) {
-       saveToHistory(targetJob + " (Edited)", editForm);
+  // Triggered when user directly edits text in the CV
+  const handleProfileUpdate = (updatedProfile: ResumeProfile) => {
+    setCurrentCV(updatedProfile);
+  };
+
+  // Triggered when user clicks the AI Sparkles on a specific field
+  const handleAIEnhance = async (field: string, expIndex?: number, descIndex?: number, text?: string) => {
+    if (!text) return;
+    const key = field === 'summary' ? 'summary' : `exp-${expIndex}-${descIndex}`;
+    setIsEnhancing(key);
+    
+    try {
+      const newText = await enhanceMicroText(text, field === 'summary' ? 'summary' : 'bullet');
+      const updatedProfile = { ...currentCV };
+      
+      if (field === 'summary') {
+        updatedProfile.summary = newText;
+      } else if (expIndex !== undefined && descIndex !== undefined) {
+        updatedProfile.experience[expIndex].description[descIndex] = newText;
+      }
+      
+      setCurrentCV(updatedProfile);
+      // Auto save AI edits to history to not lose them
+      saveToHistory(targetJob || 'AI Enhanced Draft', updatedProfile);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to rewrite with AI. Please try again.");
+    } finally {
+      setIsEnhancing(null);
     }
   };
 
   const handlePrint = () => {
+    // Before printing, auto-save the current state in case user made inline edits
+    saveToHistory(targetJob || 'Exported CV', currentCV);
     window.print();
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden relative">
       {/* Sidebar - Controls (Hidden on print) */}
       <div className="w-full lg:w-[400px] bg-white border-r border-slate-200 flex flex-col no-print z-10 shadow-2xl lg:shadow-none">
         <div className="p-6 border-b border-slate-100 flex-1 overflow-y-auto">
@@ -123,9 +146,9 @@ const Generator: React.FC<GeneratorProps> = ({
               FastCV
             </h1>
             <button 
-              onClick={onReset}
-              className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
-              title="Clear & Start Over"
+              onClick={() => setShowSettings(true)}
+              className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition-all border border-transparent"
+              title="Design & Settings"
             >
               <Settings size={20} />
             </button>
@@ -137,13 +160,13 @@ const Generator: React.FC<GeneratorProps> = ({
                 <History size={16} className="mb-1" />
                 <span className="text-[9px] font-bold uppercase tracking-wider">Records</span>
              </button>
-             <button onClick={onReset} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-slate-900 transition-all">
-                <FileText size={16} className="mb-1" />
-                <span className="text-[9px] font-bold uppercase tracking-wider">New CV</span>
+             <button onClick={() => setShowSettings(true)} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-brand-600 transition-all">
+                <Palette size={16} className="mb-1" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Design</span>
              </button>
-             <button onClick={onShowDevProfile} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-brand-600 transition-all">
+             <button onClick={onShowDevProfile} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-slate-900 transition-all">
                 <Terminal size={16} className="mb-1" />
-                <span className="text-[9px] font-bold uppercase tracking-wider">Developer</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider">Dev</span>
              </button>
              <button onClick={onShowAboutApp} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-emerald-600 transition-all">
                 <Info size={16} className="mb-1" />
@@ -151,22 +174,18 @@ const Generator: React.FC<GeneratorProps> = ({
              </button>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200/60 mb-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Profile Data</h2>
-              <button onClick={() => setIsEditing(true)} className="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 hover:bg-brand-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                <Edit3 size={10} /> Edit Manual
-              </button>
-            </div>
-            <p className="text-sm text-slate-700 mb-3 truncate">Ready for <strong className="font-bold text-slate-900">{currentCV.fullName}</strong></p>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
-                {currentCV.experience?.length || 0} Roles
-              </span>
-              <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
-                {currentCV.skills?.length || 0} Skills
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200/60 mb-6 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 opacity-10"><LayoutTemplate size={48} /></div>
+            <div className="flex items-center justify-between mb-2 relative z-10">
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Profile</h2>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                Live Edit Mode
               </span>
             </div>
+            <p className="text-sm text-slate-700 mb-3 truncate relative z-10">Ready for <strong className="font-bold text-slate-900">{currentCV.fullName}</strong></p>
+            <p className="text-[10px] text-slate-500 font-medium relative z-10 leading-relaxed">
+              💡 Tip: Click anywhere on the CV to type directly. Hover over items to drag-and-drop or use AI rewrite!
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -235,43 +254,19 @@ const Generator: React.FC<GeneratorProps> = ({
             className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
           >
             <Download size={18} />
-            Export to PDF (Print)
+            Save & Export PDF
           </button>
-          <p className="text-center text-xs text-slate-500 font-medium mt-3 mb-6">
-            Tip: Uses browser print dialog to save as PDF.
+          <p className="text-center text-[10px] text-slate-500 font-medium mt-3 mb-4">
+            Auto-saves edits. Uses browser dialog to save PDF.
           </p>
 
           {/* Sidebar Developer Copyright */}
-          <div className="w-full pt-5 border-t border-slate-200 text-center relative">
-             <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1.5">Crafted by</p>
+          <div className="w-full pt-4 border-t border-slate-200 text-center relative">
              <button onClick={onShowDevProfile} className="group block w-full outline-none text-center hover:scale-105 transition-transform duration-300">
-               <span className="block text-sm font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-emerald-600 group-hover:from-brand-500 group-hover:to-emerald-500 transition-all">
+               <span className="block text-xs font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-emerald-600 group-hover:from-brand-500 group-hover:to-emerald-500 transition-all">
                  Sayed Mohsin Ali
                </span>
-               <span className="inline-flex items-center gap-1 mt-1 bg-white border border-slate-200 shadow-sm px-2.5 py-0.5 rounded-full text-[10px] font-bold text-brand-600 group-hover:bg-brand-50 transition-colors">
-                 Systems Developer <Sparkles size={10} />
-               </span>
              </button>
-             
-             <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col items-center justify-center gap-1.5">
-               <p className="text-[10px] text-slate-400 font-medium">
-                 &copy; {new Date().getFullYear()} All rights reserved.
-               </p>
-               <p className="text-[10px] text-slate-400 font-medium">
-                 Crafted with precision for professionals.
-               </p>
-               
-               {/* Sleek Vertical Hover Animation - Small, Glowing, Fancy */}
-               <div className="group relative flex items-center justify-center min-h-[20px] w-full cursor-default overflow-hidden">
-                 <span className="absolute transform transition-all duration-500 group-hover:-translate-y-8 group-hover:opacity-0 flex items-center gap-1 text-[9px] text-slate-400 uppercase tracking-widest font-bold">
-                   Made with <span className="text-red-500 text-[9px] animate-pulse">❤️</span> in PK
-                 </span>
-                 <span className="absolute transform translate-y-8 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 text-[9px] uppercase tracking-widest font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-brand-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] whitespace-nowrap">
-                   Pakhtunistan, Khyber Pakhtunkhwa
-                 </span>
-               </div>
-               
-             </div>
           </div>
         </div>
       </div>
@@ -323,75 +318,101 @@ const Generator: React.FC<GeneratorProps> = ({
             </div>
           )}
           
-          <CVTemplate profile={currentCV} view={activeTab} />
+          <CVTemplate 
+            profile={currentCV} 
+            view={activeTab} 
+            template={template} 
+            onUpdate={handleProfileUpdate}
+            onAIEnhance={handleAIEnhance}
+            isEnhancing={isEnhancing}
+          />
         </div>
       </div>
 
-      {/* Edit CV Modal */}
-      {isEditing && (
+      {/* Settings & Design Modal */}
+      {showSettings && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setIsEditing(false)}></div>
+           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setShowSettings(false)}></div>
            
-           <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-[2rem] shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300 z-10 overflow-hidden">
-             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0 z-20">
-               <div>
-                 <h2 className="text-xl font-bold text-slate-900">Edit Details Manually</h2>
-                 <p className="text-xs text-slate-500 font-medium">Fine-tune the content before exporting</p>
+           <div className="bg-slate-50 w-full max-w-lg rounded-[2rem] shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300 z-10 overflow-hidden">
+             <div className="p-6 border-b border-slate-200 bg-white flex justify-between items-center sticky top-0 z-20">
+               <div className="flex items-center gap-3">
+                 <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
+                   <Settings size={20} />
+                 </div>
+                 <div>
+                   <h2 className="text-xl font-bold text-slate-900">Design & Settings</h2>
+                 </div>
                </div>
-               <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-800 p-2 bg-white rounded-full border border-slate-200 shadow-sm">
+               <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-800 p-2 bg-slate-50 rounded-full border border-slate-200 shadow-sm">
                  <X size={18} />
                </button>
              </div>
 
-             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+             <div className="p-6 space-y-8">
+                {/* Templates */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Professional Summary</label>
-                  <textarea 
-                    className="w-full p-4 rounded-xl border-2 border-slate-200 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 text-sm h-32 leading-relaxed"
-                    value={editForm.summary}
-                    onChange={(e) => setEditForm({...editForm, summary: e.target.value})}
-                  />
-                </div>
+                  <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <LayoutTemplate size={16} className="text-brand-500" /> Choose Template
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                     <button 
+                        onClick={() => setTemplate('modern')}
+                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${template === 'modern' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200'}`}
+                     >
+                       <div className="w-full h-12 bg-slate-100 rounded mb-2 border border-slate-200 flex flex-col p-1 gap-1">
+                          <div className="w-1/2 h-2 bg-brand-500 rounded"></div>
+                          <div className="w-full h-1 bg-slate-300 rounded"></div>
+                          <div className="w-3/4 h-1 bg-slate-300 rounded"></div>
+                       </div>
+                       <span className="text-xs font-bold">Modern</span>
+                     </button>
 
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Experience Bullet Points</label>
-                  <div className="space-y-4">
-                    {editForm.experience.map((exp, idx) => (
-                      <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                        <div className="font-bold text-sm text-slate-800 mb-2">{exp.role} @ {exp.company}</div>
-                        <textarea 
-                          className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm h-28 leading-relaxed"
-                          value={exp.description.join('\n')}
-                          onChange={(e) => {
-                            const newExp = [...editForm.experience];
-                            newExp[idx].description = e.target.value.split('\n').filter(Boolean);
-                            setEditForm({...editForm, experience: newExp});
-                          }}
-                        />
-                      </div>
-                    ))}
+                     <button 
+                        onClick={() => setTemplate('professional')}
+                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${template === 'professional' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200'}`}
+                     >
+                       <div className="w-full h-12 bg-white rounded mb-2 border border-black flex flex-col p-1 gap-1 items-center">
+                          <div className="w-3/4 h-2 bg-black rounded"></div>
+                          <div className="w-full h-px bg-black"></div>
+                          <div className="w-full h-1 bg-gray-400 rounded mt-1"></div>
+                       </div>
+                       <span className="text-xs font-bold">Classic</span>
+                     </button>
+
+                     <button 
+                        onClick={() => setTemplate('minimal')}
+                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${template === 'minimal' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200'}`}
+                     >
+                       <div className="w-full h-12 bg-white rounded mb-2 border border-slate-100 shadow-sm flex flex-col p-1 gap-1.5">
+                          <div className="w-1/2 h-3 bg-gray-800 rounded"></div>
+                          <div className="w-1/3 h-1 bg-gray-300 rounded"></div>
+                       </div>
+                       <span className="text-xs font-bold">Minimal</span>
+                     </button>
                   </div>
                 </div>
 
-                {editForm.coverLetter && (
-                   <div>
-                     <label className="block text-sm font-bold text-slate-700 mb-2">Cover Letter Body</label>
-                     <textarea 
-                       className="w-full p-4 rounded-xl border-2 border-slate-200 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 text-sm h-48 leading-relaxed"
-                       value={editForm.coverLetter}
-                       onChange={(e) => setEditForm({...editForm, coverLetter: e.target.value})}
-                     />
-                   </div>
-                )}
-             </div>
+                <hr className="border-slate-200" />
 
-             <div className="p-6 border-t border-slate-100 bg-white sticky bottom-0 z-20 flex gap-3">
-                <button onClick={() => setIsEditing(false)} className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all">
-                  Cancel
-                </button>
-                <button onClick={handleSaveEdit} className="flex-1 py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition-all shadow-md">
-                  Save Changes
-                </button>
+                {/* Danger Zone */}
+                <div>
+                  <h3 className="text-sm font-bold text-red-600 mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <Trash2 size={16} /> Danger Zone
+                  </h3>
+                  <button 
+                    onClick={() => {
+                      setShowSettings(false);
+                      onReset();
+                    }}
+                    className="w-full py-3 px-4 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-xl border border-red-200 font-bold transition-all flex justify-center items-center gap-2"
+                  >
+                    Clear All Data & Start Fresh
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2 text-center">
+                    This will delete your base profile and send you back to the setup screen.
+                  </p>
+                </div>
              </div>
            </div>
         </div>
