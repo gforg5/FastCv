@@ -1,20 +1,49 @@
-import React, { useState } from 'react';
-import { ResumeProfile } from '../types';
+import React, { useState, useEffect } from 'react';
+import { ResumeProfile, CVRecord } from '../types';
 import { tailorProfileForJob } from '../services/aiService';
 import CVTemplate from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles } from 'lucide-react';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;
   onReset: () => void;
-  onShowDevProfile?: () => void;
+  onShowDevProfile: () => void;
+  onShowAboutApp: () => void;
+  onShowRecords: () => void;
+  onUpdateHistory: () => void;
 }
 
-const Generator: React.FC<GeneratorProps> = ({ baseProfile, onReset, onShowDevProfile }) => {
+const Generator: React.FC<GeneratorProps> = ({ 
+  baseProfile, 
+  onReset, 
+  onShowDevProfile, 
+  onShowAboutApp, 
+  onShowRecords,
+  onUpdateHistory 
+}) => {
   const [targetJob, setTargetJob] = useState('');
   const [currentCV, setCurrentCV] = useState<ResumeProfile>(baseProfile);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // When baseProfile changes (e.g., loaded from history), update currentCV
+  useEffect(() => {
+    setCurrentCV(baseProfile);
+    setTargetJob(''); // reset target job since we loaded a specific profile
+  }, [baseProfile]);
+
+  const saveToHistory = (jobTitle: string, tailoredProfile: ResumeProfile) => {
+    const newRecord: CVRecord = {
+      id: Date.now().toString(),
+      targetJob: jobTitle,
+      date: new Date().toLocaleDateString(),
+      profile: tailoredProfile
+    };
+    const hist = localStorage.getItem('fastcv_history');
+    const records: CVRecord[] = hist ? JSON.parse(hist) : [];
+    localStorage.setItem('fastcv_history', JSON.stringify([newRecord, ...records]));
+    onUpdateHistory(); // notify parent
+  };
 
   const handleGenerate = async () => {
     if (!targetJob.trim()) {
@@ -28,6 +57,7 @@ const Generator: React.FC<GeneratorProps> = ({ baseProfile, onReset, onShowDevPr
     try {
       const tailored = await tailorProfileForJob(baseProfile, targetJob);
       setCurrentCV(tailored);
+      saveToHistory(targetJob, tailored);
     } catch (err: any) {
       setError(err.message || "Failed to generate CV. Please try again.");
     } finally {
@@ -44,22 +74,43 @@ const Generator: React.FC<GeneratorProps> = ({ baseProfile, onReset, onShowDevPr
       {/* Sidebar - Controls (Hidden on print) */}
       <div className="w-full lg:w-[400px] bg-white border-r border-slate-200 flex flex-col no-print z-10 shadow-2xl lg:shadow-none">
         <div className="p-6 border-b border-slate-100 flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between mb-8">
+          
+          <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-black tracking-tight text-brand-600 flex items-center gap-2">
               <Zap className="fill-brand-600" size={24} />
               FastCV
             </h1>
             <button 
               onClick={onReset}
-              className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200"
-              title="Edit Base Profile"
+              className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+              title="Clear & Start Over"
             >
               <Settings size={20} />
             </button>
           </div>
 
+          {/* Generator Navbar */}
+          <div className="grid grid-cols-4 gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl border border-slate-200/60">
+             <button onClick={onShowRecords} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-indigo-600 transition-all">
+                <History size={16} className="mb-1" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Records</span>
+             </button>
+             <button onClick={onReset} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-slate-900 transition-all">
+                <FileText size={16} className="mb-1" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">New CV</span>
+             </button>
+             <button onClick={onShowDevProfile} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-brand-600 transition-all">
+                <Terminal size={16} className="mb-1" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Developer</span>
+             </button>
+             <button onClick={onShowAboutApp} className="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-500 hover:text-emerald-600 transition-all">
+                <Info size={16} className="mb-1" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">About</span>
+             </button>
+          </div>
+
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200/60 mb-8 shadow-sm">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Active Base Profile</h2>
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Active Profile Data</h2>
             <p className="text-sm text-slate-700 mb-3">Using details for <strong className="font-bold text-slate-900">{baseProfile.fullName}</strong></p>
             <div className="flex flex-wrap gap-2">
               <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
@@ -125,10 +176,10 @@ const Generator: React.FC<GeneratorProps> = ({ baseProfile, onReset, onShowDevPr
             Tip: Click to open browser print and save as PDF.
           </p>
 
-          {/* Sidebar Developer Copyright with Clickable trigger */}
+          {/* Sidebar Developer Copyright */}
           <div className="w-full pt-5 border-t border-slate-200 text-center relative">
              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1.5">Crafted by</p>
-             <button onClick={onShowDevProfile} className="group block w-full outline-none text-center">
+             <button onClick={onShowDevProfile} className="group block w-full outline-none text-center hover:scale-105 transition-transform duration-300">
                <span className="block text-sm font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-emerald-600 group-hover:from-brand-500 group-hover:to-emerald-500 transition-all">
                  Sayed Mohsin Ali
                </span>
@@ -137,13 +188,21 @@ const Generator: React.FC<GeneratorProps> = ({ baseProfile, onReset, onShowDevPr
                </span>
              </button>
              
-             <div className="mt-4 pt-4 border-t border-slate-100">
-               <p className="text-[10px] text-slate-400 font-medium mb-2">
+             <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col items-center justify-center gap-1.5">
+               <p className="text-[10px] text-slate-400 font-medium">
                  &copy; {new Date().getFullYear()} All rights reserved.
                </p>
-               <p className="text-[10px] font-bold text-slate-500 flex items-center justify-center gap-1 flex-wrap leading-tight">
-                 Made with <span className="text-red-500">❤️</span> in<br/>Khyber Pakhtunkhwa 🇵🇰 <span className="text-red-600">🟥</span>
-               </p>
+               
+               {/* Sleek Vertical Hover Animation */}
+               <div className="group relative flex items-center justify-center min-h-[16px] w-full cursor-default overflow-hidden">
+                 <span className="absolute transform transition-all duration-500 group-hover:-translate-y-8 group-hover:opacity-0 flex items-center gap-1 text-[10px] text-slate-400 uppercase tracking-widest font-medium">
+                   Made with <span className="text-red-500 text-[10px] animate-pulse">❤️</span> in PK
+                 </span>
+                 <span className="absolute transform translate-y-8 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 text-[9px] uppercase tracking-widest text-emerald-600 font-bold whitespace-nowrap">
+                   Pakhtunistan Khyber Pakhtunkhwa
+                 </span>
+               </div>
+               
              </div>
           </div>
         </div>

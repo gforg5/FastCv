@@ -68,7 +68,8 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
 
         <div className="space-y-5 relative z-10">
           <textarea
-            className="w-full h-72 p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-y font-mono text-sm shadow-inner leading-relaxed"
+            id="raw-profile-input"
+            className="w-full h-72 p-5 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 placeholder-slate-400 outline-none focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-y font-mono text-sm shadow-inner leading-relaxed"
             placeholder="e.g., John Doe&#10;john@email.com&#10;Software Engineer at TechCorp (2020-Present). I build React apps...&#10;Skills: JavaScript, TypeScript, React..."
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}

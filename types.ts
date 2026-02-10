@@ -22,3 +22,10 @@ export interface ResumeProfile {
   experience: Experience[];
   education: Education[];
 }
+
+export interface CVRecord {
+  id: string;
+  targetJob: string;
+  date: string;
+  profile: ResumeProfile;
+}
