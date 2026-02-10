@@ -192,14 +192,17 @@ const Generator: React.FC<GeneratorProps> = ({
                <p className="text-[10px] text-slate-400 font-medium">
                  &copy; {new Date().getFullYear()} All rights reserved.
                </p>
+               <p className="text-[10px] text-slate-400 font-medium">
+                 Crafted with precision for professionals.
+               </p>
                
-               {/* Sleek Vertical Hover Animation */}
-               <div className="group relative flex items-center justify-center min-h-[16px] w-full cursor-default overflow-hidden">
-                 <span className="absolute transform transition-all duration-500 group-hover:-translate-y-8 group-hover:opacity-0 flex items-center gap-1 text-[10px] text-slate-400 uppercase tracking-widest font-medium">
-                   Made with <span className="text-red-500 text-[10px] animate-pulse">❤️</span> in PK
+               {/* Sleek Vertical Hover Animation - Small, Glowing, Fancy */}
+               <div className="group relative flex items-center justify-center min-h-[20px] w-full cursor-default overflow-hidden">
+                 <span className="absolute transform transition-all duration-500 group-hover:-translate-y-8 group-hover:opacity-0 flex items-center gap-1 text-[9px] text-slate-400 uppercase tracking-widest font-bold">
+                   Made with <span className="text-red-500 text-[9px] animate-pulse">❤️</span> in PK
                  </span>
-                 <span className="absolute transform translate-y-8 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 text-[9px] uppercase tracking-widest text-emerald-600 font-bold whitespace-nowrap">
-                   Pakhtunistan Khyber Pakhtunkhwa
+                 <span className="absolute transform translate-y-8 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 text-[9px] uppercase tracking-widest font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-brand-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] whitespace-nowrap">
+                   Pakhtunistan, Khyber Pakhtunkhwa
                  </span>
                </div>
                

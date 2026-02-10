@@ -168,14 +168,17 @@ const App: React.FC = () => {
                <p className="text-sm font-medium text-slate-500">
                  &copy; {new Date().getFullYear()} <strong className="text-slate-700">Sayed Mohsin Ali</strong>. All rights reserved.
                </p>
+               <p className="text-xs text-slate-400 font-medium">
+                 Crafted with precision for professionals.
+               </p>
                
-               {/* Fixed Footer Animation */}
-               <div className="group relative flex items-center justify-center min-h-[20px] w-full cursor-default overflow-hidden mt-1">
-                 <span className="absolute transform transition-all duration-500 group-hover:-translate-y-8 group-hover:opacity-0 flex items-center gap-1 text-[10px] text-slate-400 uppercase tracking-widest font-medium">
+               {/* Fixed Footer Animation - Small, Glowing, Fancy */}
+               <div className="group relative flex items-center justify-center min-h-[24px] w-full cursor-default overflow-hidden mt-1">
+                 <span className="absolute transform transition-all duration-500 group-hover:-translate-y-8 group-hover:opacity-0 flex items-center gap-1 text-[10px] text-slate-400 uppercase tracking-widest font-bold">
                    Made with <span className="text-red-500 text-[10px] animate-pulse">❤️</span> in PK
                  </span>
-                 <span className="absolute transform translate-y-8 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 text-[10px] uppercase tracking-widest text-emerald-600 font-bold whitespace-nowrap">
-                   Pakhtunistan Khyber Pakhtunkhwa
+                 <span className="absolute transform translate-y-8 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 text-[10px] uppercase tracking-widest font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-brand-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] whitespace-nowrap">
+                   Pakhtunistan, Khyber Pakhtunkhwa
                  </span>
                </div>
 
