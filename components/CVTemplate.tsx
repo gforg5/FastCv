@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ResumeProfile, Experience, Education } from '../types';
-import { Mail, Phone, MapPin, Sparkles, GripVertical } from 'lucide-react';
+import { Mail, Phone, MapPin, Sparkles, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 
 export type TemplateType = 'modern' | 'professional' | 'minimal';
 
@@ -57,12 +57,31 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
     onUpdate({ ...profile, education: newEdu });
   };
 
-  // Drag & Drop Handlers
+  // Prevent Enter key from breaking layout in single-line editable fields
+  const preventEnter = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+  };
+
+  // Mobile Friendly Move Handlers
+  const handleMove = (index: number, direction: 'up' | 'down', type: 'experience' | 'education') => {
+    if (!onUpdate) return;
+    const items = [...profile[type]] as any[];
+    if (direction === 'up' && index > 0) {
+      [items[index - 1], items[index]] = [items[index], items[index - 1]];
+    } else if (direction === 'down' && index < items.length - 1) {
+      [items[index], items[index + 1]] = [items[index + 1], items[index]];
+    }
+    onUpdate({ ...profile, [type]: items });
+  };
+
+  // Drag & Drop Handlers for Desktop
   const handleDragStart = (e: React.DragEvent, index: number, type: 'experience' | 'education') => {
     setDragIndex(index);
     setDragType(type);
     e.dataTransfer.effectAllowed = 'move';
-    // Visual drag image adjustments could go here
   };
 
   const handleDragOver = (e: React.DragEvent, index: number, type: 'experience' | 'education') => {
@@ -84,7 +103,7 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
   };
 
   const editableClass = "outline-none hover:bg-brand-50/40 hover:outline hover:outline-2 hover:outline-dashed hover:outline-brand-300 transition-all rounded px-0.5 -mx-0.5 focus:bg-white focus:outline-solid focus:outline-brand-500 focus:ring-2 focus:ring-brand-500/20";
-  const itemWrapperClass = "group/item relative transition-all rounded-lg -mx-4 px-4 py-2 hover:bg-slate-50/50";
+  const itemWrapperClass = "group/item relative transition-all rounded-lg sm:-mx-4 sm:px-4 py-2 hover:bg-slate-50/50";
 
   // Template Styles
   const templateStyles = {
@@ -124,20 +143,21 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
 
   if (view === 'cover-letter' && profile.coverLetter) {
     return (
-      <div className={`bg-white shadow-xl max-w-[21cm] min-h-[29.7cm] mx-auto p-12 cv-page sm:rounded-lg ${style.wrapper}`}>
+      <div className={`bg-white shadow-xl w-[21cm] max-w-full min-h-[29.7cm] mx-auto p-8 sm:p-12 cv-page sm:rounded-lg shrink-0 ${style.wrapper}`}>
         <header className={style.header}>
           <h1 
             className={`${style.name} ${editableClass}`}
             contentEditable={true} 
             suppressContentEditableWarning={true}
             onBlur={(e) => handleBlur('fullName', e)}
+            onKeyDown={preventEnter}
           >
             {profile.fullName || 'Your Name'}
           </h1>
           <div className={`flex flex-wrap gap-4 text-sm ${template === 'professional' ? 'justify-center' : ''}`}>
-             <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('email', e)}>{profile.email}</div>
-             <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('phone', e)}>{profile.phone}</div>
-             <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('location', e)}>{profile.location}</div>
+             <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('email', e)} onKeyDown={preventEnter}>{profile.email}</div>
+             <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('phone', e)} onKeyDown={preventEnter}>{profile.phone}</div>
+             <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('location', e)} onKeyDown={preventEnter}>{profile.location}</div>
           </div>
         </header>
 
@@ -154,10 +174,10 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
   }
 
   return (
-    <div className={`bg-white shadow-xl max-w-[21cm] min-h-[29.7cm] mx-auto p-12 cv-page sm:rounded-lg ${style.wrapper} relative group/cv`}>
+    <div className={`bg-white shadow-xl w-[21cm] max-w-full min-h-[29.7cm] mx-auto p-8 sm:p-12 cv-page sm:rounded-lg shrink-0 ${style.wrapper} relative group/cv`}>
       
       {/* Edit Hint */}
-      <div className="absolute top-4 right-4 bg-brand-50 text-brand-600 text-xs font-bold px-3 py-1.5 rounded-full border border-brand-200 opacity-0 group-hover/cv:opacity-100 transition-opacity no-print shadow-sm flex items-center gap-1.5 pointer-events-none">
+      <div className="absolute top-4 right-4 bg-brand-50 text-brand-600 text-xs font-bold px-3 py-1.5 rounded-full border border-brand-200 opacity-100 sm:opacity-0 group-hover/cv:opacity-100 transition-opacity no-print shadow-sm flex items-center gap-1.5 pointer-events-none">
         <Sparkles size={12} /> Click anywhere to edit directly
       </div>
 
@@ -165,22 +185,24 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
       <header className={style.header}>
         <h1 
           className={`${style.name} ${editableClass}`}
-          contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('fullName', e)}
+          contentEditable={true} suppressContentEditableWarning={true} 
+          onBlur={(e) => handleBlur('fullName', e)}
+          onKeyDown={preventEnter}
         >
           {profile.fullName || 'Your Name'}
         </h1>
         <div className={`flex flex-wrap gap-4 text-sm ${template === 'professional' ? 'justify-center' : 'text-slate-600'}`}>
-          <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('email', e)}><Mail size={14} className="no-print" />{profile.email}</div>
-          <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('phone', e)}><Phone size={14} className="no-print" />{profile.phone}</div>
-          <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('location', e)}><MapPin size={14} className="no-print" />{profile.location}</div>
+          <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('email', e)} onKeyDown={preventEnter}><Mail size={14} className="no-print" />{profile.email}</div>
+          <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('phone', e)} onKeyDown={preventEnter}><Phone size={14} className="no-print" />{profile.phone}</div>
+          <div className={`flex items-center gap-1.5 ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleBlur('location', e)} onKeyDown={preventEnter}><MapPin size={14} className="no-print" />{profile.location}</div>
         </div>
       </header>
 
       {/* Summary */}
       {profile.summary && (
         <section className="mb-6 relative group/summary">
-          <div className="absolute -left-10 top-0 p-2 opacity-0 group-hover/summary:opacity-100 cursor-pointer no-print transition-all hover:scale-110" onClick={() => onAIEnhance && onAIEnhance('summary', undefined, undefined, profile.summary)} title="Rewrite Summary with AI">
-            {isEnhancing === 'summary' ? <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin"></div> : <Sparkles size={16} className="text-brand-500" />}
+          <div className="absolute -left-6 sm:-left-10 top-0 p-1.5 sm:p-2 opacity-100 sm:opacity-0 group-hover/summary:opacity-100 cursor-pointer no-print transition-all hover:scale-110 bg-brand-100 sm:bg-transparent rounded-md shadow-sm sm:shadow-none z-20" onClick={() => onAIEnhance && onAIEnhance('summary', undefined, undefined, profile.summary)} title="Rewrite Summary with AI">
+            {isEnhancing === 'summary' ? <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin"></div> : <Sparkles size={16} className="text-brand-600 sm:text-brand-500" />}
           </div>
           <p 
             className={`text-sm leading-relaxed ${template === 'minimal' ? 'text-gray-600' : 'text-slate-700'} ${editableClass}`}
@@ -206,20 +228,22 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
                 onDragEnd={handleDragEnd}
                 style={{ opacity: dragIndex === idx && dragType === 'experience' ? 0.4 : 1 }}
               >
-                {/* Drag Handle */}
-                <div className="absolute -left-8 top-2 text-slate-300 opacity-0 group-hover/item:opacity-100 cursor-grab active:cursor-grabbing no-print hover:text-brand-500 transition-colors p-1">
-                  <GripVertical size={18} />
+                {/* Drag Handle & Up/Down Arrows */}
+                <div className="absolute -left-2 sm:-left-12 top-1 sm:top-2 flex flex-col sm:flex-row items-center opacity-100 sm:opacity-0 group-hover/item:opacity-100 transition-opacity no-print bg-white sm:bg-transparent shadow-sm sm:shadow-none rounded-md border border-slate-200 sm:border-transparent z-20 p-0.5">
+                  <button onClick={() => handleMove(idx, 'up', 'experience')} disabled={idx === 0} className="p-1 text-slate-500 hover:text-brand-600 disabled:opacity-30"><ArrowUp size={16}/></button>
+                  <div className="p-1 text-slate-400 cursor-grab active:cursor-grabbing hover:text-brand-600 hidden sm:block" title="Drag to reorder"><GripVertical size={16} /></div>
+                  <button onClick={() => handleMove(idx, 'down', 'experience')} disabled={idx === profile.experience.length - 1} className="p-1 text-slate-500 hover:text-brand-600 disabled:opacity-30"><ArrowDown size={16}/></button>
                 </div>
 
                 <div className="flex justify-between items-baseline mb-1">
-                  <h3 className={`${style.jobTitle} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'role', e)}>{exp.role}</h3>
+                  <h3 className={`${style.jobTitle} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'role', e)} onKeyDown={preventEnter}>{exp.role}</h3>
                   <span className="flex items-center gap-1 text-right">
-                    <span className={`${style.date} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'startDate', e)}>{exp.startDate}</span>
+                    <span className={`${style.date} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'startDate', e)} onKeyDown={preventEnter}>{exp.startDate}</span>
                     <span className={style.date}>-</span>
-                    <span className={`${style.date} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'endDate', e)}>{exp.endDate}</span>
+                    <span className={`${style.date} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'endDate', e)} onKeyDown={preventEnter}>{exp.endDate}</span>
                   </span>
                 </div>
-                <div className={`${style.company} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'company', e)}>
+                <div className={`${style.company} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpBlur(idx, 'company', e)} onKeyDown={preventEnter}>
                   {exp.company}
                 </div>
                 <ul className="list-disc list-outside ml-4 text-sm space-y-1.5 mt-2">
@@ -228,8 +252,8 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
                     return (
                       <li key={dIdx} className="leading-snug relative group/bullet pl-1">
                         {/* AI Rewrite Bullet Button */}
-                        <div className="absolute -left-10 top-0 p-1 opacity-0 group-hover/bullet:opacity-100 cursor-pointer no-print transition-all hover:scale-110" onClick={() => onAIEnhance && onAIEnhance('bullet', idx, dIdx, desc)} title="Rewrite bullet with AI">
-                          {isEnhancing === enhanceKey ? <div className="w-3.5 h-3.5 mt-0.5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin"></div> : <Sparkles size={14} className="text-brand-500 mt-0.5" />}
+                        <div className="absolute -left-6 sm:-left-10 top-0 p-1 opacity-100 sm:opacity-0 group-hover/bullet:opacity-100 cursor-pointer no-print transition-all hover:scale-110 bg-brand-100 sm:bg-transparent rounded shadow-sm sm:shadow-none z-20" onClick={() => onAIEnhance && onAIEnhance('bullet', idx, dIdx, desc)} title="Rewrite bullet with AI">
+                          {isEnhancing === enhanceKey ? <div className="w-3.5 h-3.5 mt-0.5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin"></div> : <Sparkles size={14} className="text-brand-600 sm:text-brand-500 mt-0.5" />}
                         </div>
                         <span className={`${editableClass} block`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleExpDescBlur(idx, dIdx, e)}>
                           {desc}
@@ -265,7 +289,7 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
                 </span>
               ))}
             </div>
-            <p className="text-[9px] text-slate-400 mt-2 opacity-0 group-hover/cv:opacity-100 transition-opacity no-print">
+            <p className="text-[9px] text-slate-400 mt-2 opacity-100 sm:opacity-0 group-hover/cv:opacity-100 transition-opacity no-print">
               Edit skills directly (separate by new line)
             </p>
           </section>
@@ -286,12 +310,14 @@ const CVTemplate: React.FC<CVTemplateProps> = ({
                   onDragEnd={handleDragEnd}
                   style={{ opacity: dragIndex === idx && dragType === 'education' ? 0.4 : 1 }}
                 >
-                  <div className="absolute -left-6 top-2 text-slate-300 opacity-0 group-hover/item:opacity-100 cursor-grab active:cursor-grabbing no-print hover:text-brand-500 transition-colors">
-                    <GripVertical size={16} />
+                  <div className="absolute -left-2 sm:-left-12 top-1 sm:top-2 flex flex-col sm:flex-row items-center opacity-100 sm:opacity-0 group-hover/item:opacity-100 transition-opacity no-print bg-white sm:bg-transparent shadow-sm sm:shadow-none rounded-md border border-slate-200 sm:border-transparent z-20 p-0.5">
+                    <button onClick={() => handleMove(idx, 'up', 'education')} disabled={idx === 0} className="p-1 text-slate-500 hover:text-brand-600 disabled:opacity-30"><ArrowUp size={16}/></button>
+                    <div className="p-1 text-slate-400 cursor-grab active:cursor-grabbing hover:text-brand-600 hidden sm:block"><GripVertical size={16} /></div>
+                    <button onClick={() => handleMove(idx, 'down', 'education')} disabled={idx === profile.education.length - 1} className="p-1 text-slate-500 hover:text-brand-600 disabled:opacity-30"><ArrowDown size={16}/></button>
                   </div>
-                  <h3 className={`${style.jobTitle} text-sm ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleEduBlur(idx, 'degree', e)}>{edu.degree}</h3>
-                  <div className={`text-sm ${template === 'minimal' ? 'text-gray-500' : 'text-slate-600'} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleEduBlur(idx, 'institution', e)}>{edu.institution}</div>
-                  <div className={`text-xs mt-0.5 ${template === 'minimal' ? 'text-gray-400' : 'text-slate-500'} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleEduBlur(idx, 'year', e)}>{edu.year}</div>
+                  <h3 className={`${style.jobTitle} text-sm ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleEduBlur(idx, 'degree', e)} onKeyDown={preventEnter}>{edu.degree}</h3>
+                  <div className={`text-sm ${template === 'minimal' ? 'text-gray-500' : 'text-slate-600'} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleEduBlur(idx, 'institution', e)} onKeyDown={preventEnter}>{edu.institution}</div>
+                  <div className={`text-xs mt-0.5 ${template === 'minimal' ? 'text-gray-400' : 'text-slate-500'} ${editableClass}`} contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => handleEduBlur(idx, 'year', e)} onKeyDown={preventEnter}>{edu.year}</div>
                 </div>
               ))}
             </div>

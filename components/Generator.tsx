@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ResumeProfile, CVRecord } from '../types';
 import { tailorProfileForJob, generateCoverLetter, enhanceMicroText } from '../services/aiService';
 import CVTemplate, { TemplateType } from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2 } from 'lucide-react';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2, ArrowRight } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;
@@ -138,7 +138,7 @@ const Generator: React.FC<GeneratorProps> = ({
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden relative">
       {/* Sidebar - Controls (Hidden on print) */}
       <div className="w-full lg:w-[400px] bg-white border-r border-slate-200 flex flex-col no-print z-10 shadow-2xl lg:shadow-none">
-        <div className="p-6 border-b border-slate-100 flex-1 overflow-y-auto">
+        <div className="p-6 border-b border-slate-100 flex-1 overflow-y-auto custom-scrollbar">
           
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-black tracking-tight text-brand-600 flex items-center gap-2">
@@ -272,10 +272,13 @@ const Generator: React.FC<GeneratorProps> = ({
       </div>
 
       {/* Main View - CV Preview */}
-      <div className="flex-1 bg-slate-100 lg:overflow-y-auto p-4 lg:p-8 relative flex flex-col">
-        {/* Mobile indicator */}
-        <div className="lg:hidden text-center mb-6 text-sm text-brand-600 font-bold uppercase tracking-wider no-print">
-          Scroll down to see preview
+      <div className="flex-1 bg-slate-100 lg:overflow-y-auto pt-6 px-4 pb-4 lg:p-8 relative flex flex-col w-full overflow-x-hidden">
+        
+        {/* Mobile Horizontal Swipe Indicator */}
+        <div className="lg:hidden flex justify-center items-center mb-6 no-print">
+          <div className="bg-brand-100/60 border border-brand-200 text-brand-700 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm">
+            <Sparkles size={14} /> Swipe horizontally to view full CV <ArrowRight size={14} className="animate-pulse" />
+          </div>
         </div>
 
         {/* Main View Top Bar (Tabs & Export) */}
@@ -301,16 +304,18 @@ const Generator: React.FC<GeneratorProps> = ({
           
           <button
             onClick={handlePrint}
-            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg hidden sm:flex"
           >
             <Download size={16} />
             Export PDF
           </button>
         </div>
         
-        <div className="max-w-4xl mx-auto w-full relative pb-10">
+        {/* Scrollable Container for Mobile Responsiveness */}
+        <div className="w-full relative pb-10 overflow-x-auto print:overflow-visible custom-scrollbar">
+          
           {isGenerating && (
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-10 flex items-center justify-center rounded-lg border border-white/50">
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-30 flex items-center justify-center rounded-lg border border-white/50">
               <div className="bg-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-brand-600 font-bold border border-brand-100">
                 <Loader2 className="animate-spin" size={24} />
                 Rewriting perfectly for {targetJob}...
@@ -318,14 +323,16 @@ const Generator: React.FC<GeneratorProps> = ({
             </div>
           )}
           
-          <CVTemplate 
-            profile={currentCV} 
-            view={activeTab} 
-            template={template} 
-            onUpdate={handleProfileUpdate}
-            onAIEnhance={handleAIEnhance}
-            isEnhancing={isEnhancing}
-          />
+          <div className="min-w-[800px] w-max print:min-w-0 print:w-full mx-auto px-2 sm:px-0 print:px-0">
+            <CVTemplate 
+              profile={currentCV} 
+              view={activeTab} 
+              template={template} 
+              onUpdate={handleProfileUpdate}
+              onAIEnhance={handleAIEnhance}
+              isEnhancing={isEnhancing}
+            />
+          </div>
         </div>
       </div>
 
