@@ -5,9 +5,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     // Safely polyfills process.env so the browser doesn't crash on load
-    // It maps Vercel's environment variables directly into the client build
-    'process.env': {
-      API_KEY: process.env.API_KEY || ''
-    }
+    // Using JSON.stringify ensures it compiles into valid strings in JS
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   }
 });
