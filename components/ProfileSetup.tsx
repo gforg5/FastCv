@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { parseRawProfile } from '../services/aiService';
 import { ResumeProfile } from '../types';
 import { Loader2, FileText, Upload, Sparkles, Wand2 } from 'lucide-react';
@@ -65,25 +65,76 @@ University of Texas, 2018`;
 
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
   const [rawText, setRawText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingState, setLoadingState] = useState<'idle' | 'text' | 'file'>('idle');
   const [error, setError] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExtract = async () => {
+  const handleExtractText = async () => {
     if (!rawText.trim()) {
       setError("Please paste some details first.");
       return;
     }
 
-    setIsProcessing(true);
+    setLoadingState('text');
     setError(null);
 
     try {
-      const parsedProfile = await parseRawProfile(rawText);
+      const parsedProfile = await parseRawProfile({ text: rawText });
       onProfileSaved(parsedProfile);
     } catch (err: any) {
       setError(err.message || "Failed to parse details. Please try again.");
     } finally {
-      setIsProcessing(false);
+      setLoadingState('idle');
+    }
+  };
+
+  // Helper to convert File to Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          // Remove the data:mime/type;base64, prefix required by Gemini inlineData
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        } else {
+          reject(new Error("Failed to read file"));
+        }
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Safety check: 10MB limit
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File is too large. Please upload a file smaller than 10MB.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setLoadingState('file');
+    setError(null);
+
+    try {
+      const base64Data = await fileToBase64(file);
+      // Determine correct mimeType. Fallback to application/pdf if unknown.
+      const mimeType = file.type || 'application/pdf';
+      
+      const parsedProfile = await parseRawProfile({ 
+        file: { data: base64Data, mimeType } 
+      });
+      onProfileSaved(parsedProfile);
+    } catch (err: any) {
+      setError(err.message || "Failed to parse file. Ensure it's a readable PDF, Image, or Text file.");
+    } finally {
+      setLoadingState('idle');
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -112,13 +163,29 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
 
       {/* Input Form Box */}
       <div className="p-8 bg-white rounded-3xl shadow-xl border border-slate-200 relative overflow-hidden">
+        
+        {/* Hidden File Input */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleFileUpload} 
+          accept="application/pdf,image/png,image/jpeg,image/webp,text/plain" 
+          className="hidden" 
+        />
+
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 mb-6 shadow-inner border border-brand-100 transform -rotate-3 hover:rotate-0 transition-all duration-300">
-            <Upload size={28} />
-          </div>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loadingState !== 'idle'}
+            className="inline-flex flex-col items-center justify-center p-3 rounded-2xl bg-brand-50 text-brand-600 mb-4 shadow-inner border border-brand-100 transform hover:-translate-y-1 hover:shadow-md transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Upload PDF, Image, or Text file"
+          >
+            {loadingState === 'file' ? <Loader2 className="animate-spin" size={28} /> : <Upload size={28} className="group-hover:scale-110 transition-transform" />}
+            <span className="text-[10px] font-bold uppercase tracking-wider mt-2 opacity-80 group-hover:opacity-100">Upload CV</span>
+          </button>
           <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Setup Your Base Profile</h2>
           <p className="text-slate-500 font-medium">
-            Paste your existing resume, LinkedIn summary, or just type your details below. 
+            Upload your old CV file <strong className="text-slate-700">(PDF/Image)</strong> above, OR paste your details below. 
           </p>
         </div>
 
@@ -156,14 +223,19 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileSaved }) => {
           )}
 
           <button
-            onClick={handleExtract}
-            disabled={isProcessing}
+            onClick={handleExtractText}
+            disabled={loadingState !== 'idle'}
             className="w-full py-4 px-6 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
-            {isProcessing ? (
+            {loadingState === 'text' ? (
               <>
                 <Loader2 className="animate-spin" size={22} />
-                Analyzing & Extracting Details...
+                Analyzing Text Details...
+              </>
+            ) : loadingState === 'file' ? (
+              <>
+                <Loader2 className="animate-spin" size={22} />
+                Extracting from File...
               </>
             ) : (
               <>

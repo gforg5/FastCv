@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ResumeProfile, CVRecord } from '../types';
 import { tailorProfileForJob, generateCoverLetter, enhanceMicroText } from '../services/aiService';
 import CVTemplate, { TemplateType } from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2, ArrowRight } from 'lucide-react';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;
@@ -140,18 +140,30 @@ const Generator: React.FC<GeneratorProps> = ({
       <div className="w-full lg:w-[400px] bg-white border-r border-slate-200 flex flex-col no-print z-10 shadow-2xl lg:shadow-none">
         <div className="p-6 border-b border-slate-100 flex-1 overflow-y-auto custom-scrollbar">
           
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-black tracking-tight text-brand-600 flex items-center gap-2">
-              <Zap className="fill-brand-600" size={24} />
-              FastCV
-            </h1>
+          <div className="flex flex-col mb-6">
             <button 
-              onClick={() => setShowSettings(true)}
-              className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition-all border border-transparent"
-              title="Design & Settings"
+              onClick={onReset} 
+              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-brand-600 transition-all group w-fit mb-2"
             >
-              <Settings size={20} />
+              <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" /> Main Menu
             </button>
+            <div className="flex items-center justify-between">
+              <h1 
+                onClick={onReset}
+                className="text-2xl font-black tracking-tight text-brand-600 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                title="Return to Setup / Home"
+              >
+                <Zap className="fill-brand-600" size={24} />
+                FastCV
+              </h1>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition-all border border-transparent"
+                title="Design & Settings"
+              >
+                <Settings size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Generator Navbar */}
@@ -343,15 +355,18 @@ const Generator: React.FC<GeneratorProps> = ({
            
            <div className="bg-slate-50 w-full max-w-lg rounded-[2rem] shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300 z-10 overflow-hidden">
              <div className="p-6 border-b border-slate-200 bg-white flex justify-between items-center sticky top-0 z-20">
-               <div className="flex items-center gap-3">
-                 <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
-                   <Settings size={20} />
-                 </div>
-                 <div>
+               <div className="flex items-center gap-3 sm:gap-4">
+                 <button onClick={() => setShowSettings(false)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-all group shadow-sm">
+                   <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> <span className="hidden sm:inline">Back</span>
+                 </button>
+                 <div className="flex items-center gap-2">
+                   <div className="p-2 bg-brand-50 text-brand-600 rounded-lg hidden sm:block">
+                     <Settings size={20} />
+                   </div>
                    <h2 className="text-xl font-bold text-slate-900">Design & Settings</h2>
                  </div>
                </div>
-               <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-800 p-2 bg-slate-50 rounded-full border border-slate-200 shadow-sm">
+               <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-800 p-2 bg-slate-50 rounded-full border border-slate-200 shadow-sm hover:bg-slate-100 transition-all">
                  <X size={18} />
                </button>
              </div>

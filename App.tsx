@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ProfileSetup from './components/ProfileSetup';
 import Generator from './components/Generator';
 import { ResumeProfile, CVRecord } from './types';
-import { Zap, Sparkles, X, Terminal, MapPin, Cpu, Info, FileText, History, Copy, Share2, Trash2, Edit } from 'lucide-react';
+import { Zap, Sparkles, X, Terminal, MapPin, Cpu, Info, FileText, History, Copy, Share2, Trash2, Edit, ArrowLeft } from 'lucide-react';
 
 const STORAGE_KEY = 'fastcv_base_profile';
 const HISTORY_KEY = 'fastcv_history';
@@ -59,7 +59,7 @@ const App: React.FC = () => {
       }
       return;
     }
-    if (confirm("Are you sure you want to start a New CV? This will clear your current base profile so you can add new details.")) {
+    if (confirm("Are you sure you want to return to the Home Page? This will clear your current base profile so you can start fresh.")) {
       setBaseProfile(null);
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -149,11 +149,15 @@ const App: React.FC = () => {
         <div className="container mx-auto px-4 py-8 sm:py-10 max-w-5xl flex-1 flex flex-col z-10">
           
           <header className="mb-8 sm:mb-10 flex flex-col items-center justify-center text-center">
-             <div className="flex items-center gap-3 text-brand-600 mb-6 transform hover:scale-105 transition-transform duration-500">
-               <div className="p-3 bg-white rounded-2xl shadow-xl shadow-brand-500/10 border border-brand-100">
-                 <Zap className="fill-brand-600" size={36} />
+             <div 
+                onClick={() => window.location.reload()} 
+                className="flex items-center gap-3 text-brand-600 mb-6 cursor-pointer transform hover:scale-105 transition-all duration-300 group"
+                title="Reload Home Page"
+             >
+               <div className="p-3 bg-white rounded-2xl shadow-xl shadow-brand-500/10 border border-brand-100 group-hover:shadow-brand-500/20 transition-all">
+                 <Zap className="fill-brand-600 group-hover:animate-pulse" size={36} />
                </div>
-               <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900">FastCV</h1>
+               <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 group-hover:text-brand-600 transition-colors">FastCV</h1>
              </div>
              <NavigationBar />
           </header>
@@ -206,13 +210,18 @@ const App: React.FC = () => {
            
            <div className="bg-slate-50 w-full max-w-[600px] h-[80vh] sm:h-auto sm:max-h-[85vh] rounded-[2rem] shadow-[0_0_60px_rgba(0,0,0,0.2)] border border-slate-200 relative flex flex-col transform transition-all animate-in zoom-in-95 duration-500 z-10 overflow-hidden">
               <div className="p-6 sm:p-8 border-b border-slate-200 bg-white flex justify-between items-center sticky top-0 z-20">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
-                    <History size={24} />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Saved CVs</h2>
-                    <p className="text-xs text-slate-500 font-medium">Your previously tailored records</p>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <button onClick={() => setShowRecords(false)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-all group shadow-sm">
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> <span className="hidden sm:inline">Back</span>
+                  </button>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hidden sm:block">
+                      <History size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">Saved CVs</h2>
+                      <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">Your tailored records</p>
+                    </div>
                   </div>
                 </div>
                 <button onClick={() => setShowRecords(false)} className="text-slate-400 hover:text-slate-800 p-2.5 bg-slate-50 rounded-full border border-slate-200 hover:bg-slate-100 transition-all shadow-sm">
@@ -260,7 +269,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Pro Level Fancy Developer Modal - Adjusted size to perfectly match About Modal */}
+      {/* Pro Level Fancy Developer Modal */}
       {showDevProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
            {/* Backdrop */}
@@ -273,12 +282,17 @@ const App: React.FC = () => {
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/20 rounded-full blur-3xl group-hover:bg-brand-500/30 transition-all duration-700"></div>
               <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl group-hover:bg-emerald-500/30 transition-all duration-700"></div>
 
+              {/* Back & Close Buttons */}
+              <button onClick={() => setShowDevProfile(false)} className="absolute top-4 left-4 sm:top-5 sm:left-5 text-slate-300 hover:text-white z-20 px-3 py-1.5 bg-slate-800/80 rounded-lg backdrop-blur-md border border-slate-700 hover:bg-slate-700 transition-all shadow-lg flex items-center gap-1.5 text-xs font-bold group/back">
+                <ArrowLeft size={14} className="group-hover/back:-translate-x-1 transition-transform" /> Back
+              </button>
+
               <button onClick={() => setShowDevProfile(false)} className="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-400 hover:text-white z-20 p-2 sm:p-2.5 bg-slate-800/80 rounded-full backdrop-blur-md border border-slate-700 hover:bg-slate-700 hover:scale-110 transition-all shadow-lg">
                 <X size={18} />
               </button>
               
-              {/* Profile Image - Smooth Rounded Square with extreme glow */}
-              <div className="relative mb-5 z-10 group/img w-24 h-24 sm:w-28 sm:h-28">
+              {/* Profile Image */}
+              <div className="relative mb-5 mt-8 sm:mt-4 z-10 group/img w-24 h-24 sm:w-28 sm:h-28">
                 <div className="absolute inset-0 bg-gradient-to-tr from-brand-500 to-emerald-500 rounded-[2rem] blur-xl opacity-40 group-hover/img:opacity-100 group-hover/img:blur-2xl transition-all duration-700"></div>
                 <div className="w-full h-full rounded-[2rem] bg-slate-800 p-1 relative z-10 transform group-hover/img:scale-110 group-hover/img:-rotate-3 transition-transform duration-500 shadow-2xl">
                    <img 
@@ -329,12 +343,17 @@ const App: React.FC = () => {
               {/* Background Glows */}
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-100 rounded-full blur-3xl group-hover:bg-brand-200 transition-all duration-700"></div>
               
+              {/* Back & Close Buttons */}
+              <button onClick={() => setShowAboutApp(false)} className="absolute top-4 left-4 sm:top-5 sm:left-5 text-slate-600 hover:text-slate-900 z-20 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 hover:bg-slate-200 transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold group/back">
+                <ArrowLeft size={14} className="group-hover/back:-translate-x-1 transition-transform" /> Back
+              </button>
+
               <button onClick={() => setShowAboutApp(false)} className="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-400 hover:text-slate-800 z-20 p-2 sm:p-2.5 bg-slate-50 rounded-full border border-slate-200 hover:bg-slate-100 hover:scale-110 transition-all shadow-sm">
                 <X size={18} />
               </button>
               
-              {/* Main Page Logo inside About Modal with incredible animations */}
-              <div className="relative mb-6 z-10 group/icon w-24 h-24 sm:w-28 sm:h-28">
+              {/* Main Page Logo inside About Modal */}
+              <div className="relative mb-6 mt-8 sm:mt-4 z-10 group/icon w-24 h-24 sm:w-28 sm:h-28">
                 <div className="absolute inset-0 bg-brand-400 rounded-3xl blur-xl opacity-30 group-hover/icon:opacity-60 group-hover/icon:blur-2xl transition-all duration-700"></div>
                 <div className="w-full h-full p-4 bg-white rounded-3xl shadow-xl shadow-brand-500/20 border border-brand-100 flex items-center justify-center relative z-10 transform group-hover/icon:scale-110 group-hover/icon:rotate-6 transition-transform duration-500">
                    <Zap className="fill-brand-600 text-brand-600" size={48} />

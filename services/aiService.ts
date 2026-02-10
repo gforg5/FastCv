@@ -53,21 +53,35 @@ const resumeSchema = {
   propertyOrdering: ["fullName", "email", "phone", "location", "summary", "skills", "experience", "education"]
 };
 
-export const parseRawProfile = async (rawText: string): Promise<ResumeProfile> => {
+export const parseRawProfile = async (payload: { text?: string; file?: { mimeType: string; data: string } }): Promise<ResumeProfile> => {
   const ai = getAIClient();
-  const prompt = `Extract standard resume fields from the following text. 
+  const promptString = `Extract standard resume fields from the provided profile. 
 If some contact info is missing, leave it blank. 
-Format the experience descriptions as clean bullet points.
-  
-Raw Text:
----
-${rawText}
----`;
+Format the experience descriptions as clean bullet points.`;
+
+  let contentsPayload: any;
+
+  if (payload.file) {
+    // Handling File Upload (PDF, Images, etc)
+    contentsPayload = {
+      parts: [
+        { text: promptString },
+        { inlineData: { mimeType: payload.file.mimeType, data: payload.file.data } }
+      ]
+    };
+  } else {
+    // Handling Raw Text
+    contentsPayload = {
+      parts: [
+        { text: `${promptString}\n\nRaw Text:\n---\n${payload.text}\n---` }
+      ]
+    };
+  }
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+      model: 'gemini-3-flash-preview', // Flash model handles multimodal inputs smoothly
+      contents: contentsPayload,
       config: {
         responseMimeType: "application/json",
         responseSchema: resumeSchema,
