@@ -78,6 +78,13 @@ const App: React.FC = () => {
     }
   };
 
+  const handleClearAllRecords = () => {
+    if (historyRecords.length > 0 && confirm("Are you sure you want to permanently delete ALL saved CV records? This cannot be undone.")) {
+      setHistoryRecords([]);
+      localStorage.removeItem(HISTORY_KEY);
+    }
+  };
+
   const handleDuplicateRecord = (record: CVRecord) => {
     const newRecord: CVRecord = {
       ...record,
@@ -224,9 +231,17 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setShowRecords(false)} className="text-slate-400 hover:text-slate-800 p-2.5 bg-slate-50 rounded-full border border-slate-200 hover:bg-slate-100 transition-all shadow-sm">
-                  <X size={18} />
-                </button>
+                
+                <div className="flex items-center gap-2">
+                  {historyRecords.length > 0 && (
+                    <button onClick={handleClearAllRecords} className="text-red-500 hover:text-white hover:bg-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-red-100 flex items-center gap-1.5 shadow-sm">
+                      <Trash2 size={14} /> <span className="hidden sm:inline">Clear All</span>
+                    </button>
+                  )}
+                  <button onClick={() => setShowRecords(false)} className="text-slate-400 hover:text-slate-800 p-2.5 bg-slate-50 rounded-full border border-slate-200 hover:bg-slate-100 transition-all shadow-sm">
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ResumeProfile, CVRecord } from '../types';
 import { tailorProfileForJob, generateCoverLetter, enhanceMicroText } from '../services/aiService';
 import CVTemplate, { TemplateType } from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Mail, X, LayoutTemplate, Palette, Trash2, ArrowRight, ArrowLeft, Save } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;
@@ -32,18 +32,20 @@ const Generator: React.FC<GeneratorProps> = ({
   // Settings & Templates
   const [showSettings, setShowSettings] = useState(false);
   const [template, setTemplate] = useState<TemplateType>('modern');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // When baseProfile changes (e.g., loaded from history), update currentCV
   useEffect(() => {
     setCurrentCV(baseProfile);
     setTargetJob(''); // reset target job since we loaded a specific profile
     setActiveTab('resume');
+    setHasUnsavedChanges(false);
   }, [baseProfile]);
 
   const saveToHistory = (jobTitle: string, tailoredProfile: ResumeProfile) => {
     const newRecord: CVRecord = {
       id: Date.now().toString(),
-      targetJob: jobTitle || 'Edited Draft',
+      targetJob: jobTitle || 'Manual Edit',
       date: new Date().toLocaleDateString(),
       profile: tailoredProfile
     };
@@ -51,6 +53,12 @@ const Generator: React.FC<GeneratorProps> = ({
     const records: CVRecord[] = hist ? JSON.parse(hist) : [];
     localStorage.setItem('fastcv_history', JSON.stringify([newRecord, ...records]));
     onUpdateHistory(); // notify parent
+  };
+
+  const handleManualSave = () => {
+    saveToHistory(targetJob || 'Saved Draft', currentCV);
+    setHasUnsavedChanges(false);
+    alert("CV successfully saved to your Records!");
   };
 
   const handleGenerate = async () => {
@@ -67,6 +75,7 @@ const Generator: React.FC<GeneratorProps> = ({
       setCurrentCV(tailored);
       saveToHistory(targetJob, tailored);
       setActiveTab('resume');
+      setHasUnsavedChanges(false);
     } catch (err: any) {
       setError(err.message || "Failed to generate CV. Please try again.");
     } finally {
@@ -89,6 +98,7 @@ const Generator: React.FC<GeneratorProps> = ({
       setCurrentCV(updatedCV);
       saveToHistory(targetJob + " (w/ Letter)", updatedCV);
       setActiveTab('cover-letter');
+      setHasUnsavedChanges(false);
     } catch (err: any) {
       setError(err.message || "Failed to generate cover letter.");
     } finally {
@@ -99,6 +109,7 @@ const Generator: React.FC<GeneratorProps> = ({
   // Triggered when user directly edits text in the CV
   const handleProfileUpdate = (updatedProfile: ResumeProfile) => {
     setCurrentCV(updatedProfile);
+    setHasUnsavedChanges(true);
   };
 
   // Triggered when user clicks the AI Sparkles on a specific field
@@ -118,8 +129,7 @@ const Generator: React.FC<GeneratorProps> = ({
       }
       
       setCurrentCV(updatedProfile);
-      // Auto save AI edits to history to not lose them
-      saveToHistory(targetJob || 'AI Enhanced Draft', updatedProfile);
+      setHasUnsavedChanges(true); // AI edits count as unsaved changes until user explicitly saves or exports
     } catch (err) {
       console.error(err);
       alert("Failed to rewrite with AI. Please try again.");
@@ -130,9 +140,27 @@ const Generator: React.FC<GeneratorProps> = ({
 
   const handlePrint = () => {
     // Before printing, auto-save the current state in case user made inline edits
-    saveToHistory(targetJob || 'Exported CV', currentCV);
+    if (hasUnsavedChanges) {
+      saveToHistory(targetJob || 'Exported CV', currentCV);
+      setHasUnsavedChanges(false);
+    }
     window.print();
   };
+
+  const ALL_TEMPLATES: {id: TemplateType, name: string}[] = [
+    { id: 'modern', name: 'Modern' },
+    { id: 'professional', name: 'Classic' },
+    { id: 'minimal', name: 'Minimal' },
+    { id: 'ats-strict', name: 'ATS Strict' },
+    { id: 'creative', name: 'Creative' },
+    { id: 'executive', name: 'Executive' },
+    { id: 'elegant', name: 'Elegant' },
+    { id: 'bold', name: 'Bold Dark' },
+    { id: 'startup', name: 'Startup' },
+    { id: 'corporate', name: 'Corporate' },
+    { id: 'tech', name: 'Tech / IT' },
+    { id: 'academic', name: 'Academic' }
+  ];
 
   return (
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden relative">
@@ -276,7 +304,7 @@ const Generator: React.FC<GeneratorProps> = ({
           <div className="w-full pt-4 border-t border-slate-200 text-center relative">
              <button onClick={onShowDevProfile} className="group block w-full outline-none text-center hover:scale-105 transition-transform duration-300">
                <span className="block text-xs font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-emerald-600 group-hover:from-brand-500 group-hover:to-emerald-500 transition-all">
-                 Sayed Mohsin Ali
+                 FastCv Systems Developer
                </span>
              </button>
           </div>
@@ -314,13 +342,24 @@ const Generator: React.FC<GeneratorProps> = ({
             )}
           </div>
           
-          <button
-            onClick={handlePrint}
-            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg hidden sm:flex"
-          >
-            <Download size={16} />
-            Export PDF
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {hasUnsavedChanges && (
+              <button
+                onClick={handleManualSave}
+                className="px-4 py-2.5 bg-brand-100 hover:bg-brand-200 text-brand-700 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm border border-brand-200 animate-pulse"
+              >
+                <Save size={16} />
+                <span className="hidden sm:inline">Save Edit</span>
+              </button>
+            )}
+            <button
+              onClick={handlePrint}
+              className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg hidden sm:flex"
+            >
+              <Download size={16} />
+              Export PDF
+            </button>
+          </div>
         </div>
         
         {/* Scrollable Container for Mobile Responsiveness */}
@@ -351,9 +390,9 @@ const Generator: React.FC<GeneratorProps> = ({
       {/* Settings & Design Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setShowSettings(false)}></div>
+           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md transition-opacity" onClick={() => setShowSettings(false)}></div>
            
-           <div className="bg-slate-50 w-full max-w-lg rounded-[2rem] shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300 z-10 overflow-hidden">
+           <div className="bg-slate-50 w-full max-w-2xl h-[85vh] rounded-[2rem] shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300 z-10 overflow-hidden">
              <div className="p-6 border-b border-slate-200 bg-white flex justify-between items-center sticky top-0 z-20">
                <div className="flex items-center gap-3 sm:gap-4">
                  <button onClick={() => setShowSettings(false)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-all group shadow-sm">
@@ -363,55 +402,39 @@ const Generator: React.FC<GeneratorProps> = ({
                    <div className="p-2 bg-brand-50 text-brand-600 rounded-lg hidden sm:block">
                      <Settings size={20} />
                    </div>
-                   <h2 className="text-xl font-bold text-slate-900">Design & Settings</h2>
+                   <div>
+                     <h2 className="text-xl font-bold text-slate-900">Design & Templates</h2>
+                     <p className="text-[10px] text-slate-500 font-medium">Select from 12 Premium ATS & Modern layouts</p>
+                   </div>
                  </div>
                </div>
-               <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-800 p-2 bg-slate-50 rounded-full border border-slate-200 shadow-sm hover:bg-slate-100 transition-all">
+               <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-800 p-2.5 bg-slate-50 rounded-full border border-slate-200 shadow-sm hover:bg-slate-100 transition-all">
                  <X size={18} />
                </button>
              </div>
 
-             <div className="p-6 space-y-8">
-                {/* Templates */}
+             <div className="p-6 overflow-y-auto space-y-8 flex-1">
+                {/* Templates Grid */}
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider flex items-center gap-2">
-                    <LayoutTemplate size={16} className="text-brand-500" /> Choose Template
+                    <LayoutTemplate size={16} className="text-brand-500" /> Choose Your Style
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
-                     <button 
-                        onClick={() => setTemplate('modern')}
-                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${template === 'modern' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200'}`}
-                     >
-                       <div className="w-full h-12 bg-slate-100 rounded mb-2 border border-slate-200 flex flex-col p-1 gap-1">
-                          <div className="w-1/2 h-2 bg-brand-500 rounded"></div>
-                          <div className="w-full h-1 bg-slate-300 rounded"></div>
-                          <div className="w-3/4 h-1 bg-slate-300 rounded"></div>
-                       </div>
-                       <span className="text-xs font-bold">Modern</span>
-                     </button>
-
-                     <button 
-                        onClick={() => setTemplate('professional')}
-                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${template === 'professional' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200'}`}
-                     >
-                       <div className="w-full h-12 bg-white rounded mb-2 border border-black flex flex-col p-1 gap-1 items-center">
-                          <div className="w-3/4 h-2 bg-black rounded"></div>
-                          <div className="w-full h-px bg-black"></div>
-                          <div className="w-full h-1 bg-gray-400 rounded mt-1"></div>
-                       </div>
-                       <span className="text-xs font-bold">Classic</span>
-                     </button>
-
-                     <button 
-                        onClick={() => setTemplate('minimal')}
-                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${template === 'minimal' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200'}`}
-                     >
-                       <div className="w-full h-12 bg-white rounded mb-2 border border-slate-100 shadow-sm flex flex-col p-1 gap-1.5">
-                          <div className="w-1/2 h-3 bg-gray-800 rounded"></div>
-                          <div className="w-1/3 h-1 bg-gray-300 rounded"></div>
-                       </div>
-                       <span className="text-xs font-bold">Minimal</span>
-                     </button>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                     {ALL_TEMPLATES.map(tpl => (
+                       <button 
+                         key={tpl.id}
+                         onClick={() => setTemplate(tpl.id)}
+                         className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all group ${template === tpl.id ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-md' : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200 hover:shadow-sm'}`}
+                       >
+                         <div className={`w-full h-14 rounded border mb-2 flex flex-col p-1.5 gap-1 transition-all ${template === tpl.id ? 'border-brand-300 bg-brand-100' : 'border-slate-100 bg-slate-50 group-hover:bg-slate-100'}`}>
+                            <div className={`h-2 rounded ${template === tpl.id ? 'bg-brand-500 w-1/2' : 'bg-slate-300 w-1/2'}`}></div>
+                            <div className={`h-1 rounded mt-1 ${template === tpl.id ? 'bg-brand-300 w-full' : 'bg-slate-200 w-full'}`}></div>
+                            <div className={`h-1 rounded ${template === tpl.id ? 'bg-brand-300 w-3/4' : 'bg-slate-200 w-3/4'}`}></div>
+                            <div className={`h-1 rounded ${template === tpl.id ? 'bg-brand-300 w-5/6' : 'bg-slate-200 w-5/6'}`}></div>
+                         </div>
+                         <span className="text-xs font-bold">{tpl.name}</span>
+                       </button>
+                     ))}
                   </div>
                 </div>
 
@@ -429,10 +452,10 @@ const Generator: React.FC<GeneratorProps> = ({
                     }}
                     className="w-full py-3 px-4 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-xl border border-red-200 font-bold transition-all flex justify-center items-center gap-2"
                   >
-                    Clear All Data & Start Fresh
+                    Clear All Data & Return to Setup
                   </button>
                   <p className="text-xs text-slate-500 mt-2 text-center">
-                    This will delete your base profile and send you back to the setup screen.
+                    This clears your current active base profile from the workspace.
                   </p>
                 </div>
              </div>
