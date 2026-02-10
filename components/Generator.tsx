@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ResumeProfile, CVRecord } from '../types';
 import { tailorProfileForJob, generateCoverLetter } from '../services/aiService';
 import CVTemplate from './CVTemplate';
-import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Edit3, Mail, X } from 'lucide-react';
+import { Zap, Download, Settings, Loader2, Sparkles, History, FileText, Terminal, Info, Edit3, Mail, X, MapPin } from 'lucide-react';
 
 interface GeneratorProps {
   baseProfile: ResumeProfile;

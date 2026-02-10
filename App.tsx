@@ -260,7 +260,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Pro Level Fancy Developer Modal */}
+      {/* Pro Level Fancy Developer Modal - Adjusted size to perfectly match About Modal */}
       {showDevProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
            {/* Backdrop */}
@@ -278,7 +278,7 @@ const App: React.FC = () => {
               </button>
               
               {/* Profile Image - Smooth Rounded Square with extreme glow */}
-              <div className="relative mb-6 z-10 group/img w-24 h-24 sm:w-32 sm:h-32">
+              <div className="relative mb-5 z-10 group/img w-24 h-24 sm:w-28 sm:h-28">
                 <div className="absolute inset-0 bg-gradient-to-tr from-brand-500 to-emerald-500 rounded-[2rem] blur-xl opacity-40 group-hover/img:opacity-100 group-hover/img:blur-2xl transition-all duration-700"></div>
                 <div className="w-full h-full rounded-[2rem] bg-slate-800 p-1 relative z-10 transform group-hover/img:scale-110 group-hover/img:-rotate-3 transition-transform duration-500 shadow-2xl">
                    <img 
@@ -290,18 +290,18 @@ const App: React.FC = () => {
               </div>
               
               <div className="text-center relative z-10">
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">Sayed Mohsin Ali</h2>
+                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">Sayed Mohsin Ali</h2>
                 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 font-bold uppercase tracking-widest text-[10px] sm:text-xs mb-6 shadow-inner">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 font-bold uppercase tracking-widest text-[10px] sm:text-xs mb-5 shadow-inner">
                   <Terminal size={14} /> Systems Developer
                 </div>
                 
-                <p className="text-slate-300 leading-relaxed text-xs sm:text-sm font-medium mb-8 px-2">
+                <p className="text-slate-300 leading-relaxed text-xs sm:text-sm font-medium mb-6 px-2">
                   A visionary <strong className="text-white">Systems Developer</strong> crafting high-performance, AI-driven applications. I transform complex logic into beautiful, seamless user experiences.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-2.5 text-slate-400 bg-slate-800/50 p-3 sm:p-3.5 rounded-2xl border border-slate-700/50 shadow-inner text-xs sm:text-sm mb-8 w-full">
-                  <MapPin size={18} className="text-brand-400" />
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-2.5 text-slate-400 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50 shadow-inner text-xs sm:text-sm mb-6 w-full">
+                  <MapPin size={16} className="text-brand-400" />
                   <span className="font-medium">Khyber Pakhtunkhwa, <strong className="text-slate-200">PK</strong></span>
                 </div>
                 
