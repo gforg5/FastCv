@@ -1,0 +1,5 @@
+{
+  "name": "FastCV",
+  "description": "An intelligent CV generator that saves your base profile and instantly tailors your resume for specific job titles using AI.",
+  "requestFramePermissions": []
+}

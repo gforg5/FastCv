@@ -1,0 +1,177 @@
+import React, { useState } from 'react';
+import { ResumeProfile } from '../types';
+import { tailorProfileForJob } from '../services/aiService';
+import CVTemplate from './CVTemplate';
+import { Zap, Download, Settings, Loader2, Sparkles } from 'lucide-react';
+
+interface GeneratorProps {
+  baseProfile: ResumeProfile;
+  onReset: () => void;
+  onShowDevProfile?: () => void;
+}
+
+const Generator: React.FC<GeneratorProps> = ({ baseProfile, onReset, onShowDevProfile }) => {
+  const [targetJob, setTargetJob] = useState('');
+  const [currentCV, setCurrentCV] = useState<ResumeProfile>(baseProfile);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    if (!targetJob.trim()) {
+      setError("Please enter a job title.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      const tailored = await tailorProfileForJob(baseProfile, targetJob);
+      setCurrentCV(tailored);
+    } catch (err: any) {
+      setError(err.message || "Failed to generate CV. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden">
+      {/* Sidebar - Controls (Hidden on print) */}
+      <div className="w-full lg:w-[400px] bg-white border-r border-slate-200 flex flex-col no-print z-10 shadow-2xl lg:shadow-none">
+        <div className="p-6 border-b border-slate-100 flex-1 overflow-y-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-black tracking-tight text-brand-600 flex items-center gap-2">
+              <Zap className="fill-brand-600" size={24} />
+              FastCV
+            </h1>
+            <button 
+              onClick={onReset}
+              className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200"
+              title="Edit Base Profile"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
+
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200/60 mb-8 shadow-sm">
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Active Base Profile</h2>
+            <p className="text-sm text-slate-700 mb-3">Using details for <strong className="font-bold text-slate-900">{baseProfile.fullName}</strong></p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
+                {baseProfile.experience?.length || 0} Roles
+              </span>
+              <span className="text-[11px] font-semibold bg-white border border-slate-200 px-2 py-1 rounded-md text-brand-700 shadow-sm">
+                {baseProfile.skills?.length || 0} Skills
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="targetJob" className="block text-sm font-bold text-slate-700 mb-2">
+                Target Job Title
+              </label>
+              <input
+                id="targetJob"
+                type="text"
+                placeholder="e.g., Senior Frontend Developer"
+                value={targetJob}
+                onChange={(e) => setTargetJob(e.target.value)}
+                className="w-full p-4 rounded-xl border-2 border-slate-200 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-slate-900 font-medium shadow-sm bg-white"
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating || !targetJob.trim()}
+              className="w-full py-4 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Tailoring...
+                </>
+              ) : (
+                <>
+                  <Zap size={20} />
+                  Fast Generate
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 mt-auto bg-slate-50 border-t border-slate-200 flex flex-col items-center">
+           <button
+            onClick={handlePrint}
+            className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+          >
+            <Download size={18} />
+            Download PDF
+          </button>
+          <p className="text-center text-xs text-slate-500 font-medium mt-3 mb-6">
+            Tip: Click to open browser print and save as PDF.
+          </p>
+
+          {/* Sidebar Developer Copyright with Clickable trigger */}
+          <div className="w-full pt-5 border-t border-slate-200 text-center relative">
+             <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1.5">Crafted by</p>
+             <button onClick={onShowDevProfile} className="group block w-full outline-none text-center">
+               <span className="block text-sm font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-emerald-600 group-hover:from-brand-500 group-hover:to-emerald-500 transition-all">
+                 Sayed Mohsin Ali
+               </span>
+               <span className="inline-flex items-center gap-1 mt-1 bg-white border border-slate-200 shadow-sm px-2.5 py-0.5 rounded-full text-[10px] font-bold text-brand-600 group-hover:bg-brand-50 transition-colors">
+                 Systems Developer <Sparkles size={10} />
+               </span>
+             </button>
+             
+             <div className="mt-4 pt-4 border-t border-slate-100">
+               <p className="text-[10px] text-slate-400 font-medium mb-2">
+                 &copy; {new Date().getFullYear()} All rights reserved.
+               </p>
+               <p className="text-[10px] font-bold text-slate-500 flex items-center justify-center gap-1 flex-wrap leading-tight">
+                 Made with <span className="text-red-500">❤️</span> in<br/>Khyber Pakhtunkhwa 🇵🇰 <span className="text-red-600">🟥</span>
+               </p>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main View - CV Preview */}
+      <div className="flex-1 bg-slate-100 lg:overflow-y-auto p-4 lg:p-8 relative">
+        <div className="max-w-4xl mx-auto">
+          {/* Mobile indicator */}
+          <div className="lg:hidden text-center mb-6 text-sm text-brand-600 font-bold uppercase tracking-wider no-print">
+            Scroll down to see preview
+          </div>
+          
+          <div className="relative">
+            {isGenerating && (
+              <div className="absolute inset-0 bg-white/50 backdrop-blur-md z-10 flex items-center justify-center rounded-lg border border-white/50">
+                <div className="bg-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-brand-600 font-bold border border-brand-100">
+                  <Loader2 className="animate-spin" size={24} />
+                  Rewriting perfectly for {targetJob}...
+                </div>
+              </div>
+            )}
+            <CVTemplate profile={currentCV} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Generator;
